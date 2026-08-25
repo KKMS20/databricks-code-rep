@@ -1,0 +1,130 @@
+---
+config:
+  theme: mc
+---
+flowchart LR
+ subgraph Source["Source"]
+        Branches["Branches"]
+        Employees["Employees"]
+        Cust_Profile["Cust_Profile"]
+        Accounts["Accounts"]
+        Transactions["Transactions"]
+        Payments["Payments"]
+        Loans["Loans"]
+        CreditCard["CreditCard"]
+  end
+  Source -- "<b><font size=4 color=Blue>Pushing Files from Source System to Staging Area</font><b></b></b>" --> Staging
+    Branches -- Push the Branch File to Staging Area --> SRC_Branches
+    Employees -- Push the Employee File to Staging Area --> SRC_Employees
+    Cust_Profile -- Push the Customer File to Staging Area --> SRC_Cust_Profile
+    Accounts -- Push the Accounts File to Staging Area --> SRC_Accounts
+    Transactions -- Push the Transactions File to Staging Area --> SRC_Transactions
+    Payments -- Push the Payments File to Staging Area --> SRC_Payments
+    Loans -- Push the Loans File to Staging Area --> SRC_Loans
+    CreditCard -- Push the CreditCard File to Staging Area --> SRC_CreditCard
+
+ subgraph Staging["Staging-Raw Data Files"]
+        SRC_Branches["SRC_Branches"]
+        SRC_Employees["SRC_Employees"]
+        SRC_Cust_Profile["SRC_Cust_Profile"]
+        SRC_Accounts["SRC_Accounts"]
+        SRC_Transactions["SRC_Transactions"]
+        SRC_Payments["SRC_Payments"]
+        SRC_Loans["SRC_Loans"]
+        SRC_CreditCard["SRC_CreditCard"]
+  end
+      Staging -- "<b><font size=4 color=Blue>Pushing Files from Staging to DSA Area in Table</font><b></b></b>" --> DSA
+    SRC_Branches -- Branch File to DSA --> DSA_Branches
+    SRC_Employees -- Employee File to DSA --> DSA_Employees
+    SRC_Cust_Profile -- Customer File to DSA --> DSA_Cust_Profile
+    SRC_Accounts -- Accounts File to DSA --> DSA_Accounts
+    SRC_Transactions -- Transactions File to DSA --> DSA_Transactions
+    SRC_Payments -- Payments File to DSA --> DSA_Payments
+    SRC_Loans -- Loans File to DSA --> DSA_Loans
+    SRC_CreditCard -- CreditCard File to DSA --> DSA_CreditCard
+ subgraph DSA["DSA - Data Staging Area Layer"]
+        DSA_Branches[("DSA_Branches")]
+        DSA_Employees[("DSA_Employees")]
+        DSA_Cust_Profile[("DSA_Cust_Profile")]
+        DSA_Accounts[("DSA_Accounts")]
+        DSA_Transactions[("DSA_Transaction")]
+        DSA_Payments[("DSA_Payments")]
+        DSA_Loans[("DSA_Loans")]
+        DSA_CreditCard[("DSA_CreditCard")]
+  end
+  
+    DSA -- "<b><font size=4 color=Blue> Cleansing &amp; Scrubing Data from DSA to ODS </font><b></b></b>" --> ODS
+    DSA_Branches -- Branch Data ODS --> ODS_Branches
+    DSA_Employees -- Employee Data to ODS --> ODS_Employees
+    DSA_Cust_Profile -- Customer  Data to ODS --> ODS_Cust_Profile
+    DSA_Accounts -- Accounts  Data to ODS --> ODS_Accounts
+    DSA_Transactions -- Transactions  Data to ODS --> ODS_Transactions
+    DSA_Payments -- Payments  Data to ODS --> ODS_Payments
+    DSA_Loans -- Loans  Data to ODS --> ODS_Loans
+    DSA_CreditCard -- CreditCard  Data to ODS --> ODS_CreditCard
+ subgraph ODS["ODS - Operational Data Storage"]
+        ODS_Branches[("ODS_Branches")]
+        ODS_Employees[("ODS_Employees")]
+        ODS_Cust_Profile[("ODS_Cust_Profile")]
+        ODS_Accounts[("ODS_Accounts")]
+        ODS_Transactions[("ODS_Transactions")]
+        ODS_Payments[("ODS_Payments")]
+        ODS_Loans[("ODS_Loans")]
+        ODS_CreditCard[("ODS_CreditCard")]
+        end
+
+ subgraph EDW["EDW - Enterprise Dataware House"]
+       DIM_Loans["DIM_Loans"]
+       DIM_Branches["DIM_Branches"]
+       DIM_Employees["DIM_Employees"]
+       DIM_Cust_Profile["Dim_Cust_Profile"] 
+       FACT_Loans["FACT_Loans"]
+ end
+
+    ODS -- "<b><font size=4 color=Blue>Pushing Files from ODS to EDW Layer</font><b></b></b>" --> EDW
+    ODS_Branches --> DIM_Branches[("DIM_Branches")]
+    ODS_Employees--> DIM_Employees[("DIM_Employees")]
+    ODS_Cust_Profile--> DIM_Cust_Profile[("Dim_Cust_Profile")]
+    ODS_Loans --> DIM_Loans[("DIM_Loans")]
+    ODS_Loans --> FACT_Loans[("FACT_Loans")]
+    DIM_Branches -->FACT_Loans[("FACT_Loans")]
+    DIM_Employees -->FACT_Loans[("FACT_Loans")]
+    DIM_Cust_Profile-->FACT_Loans[("FACT_Loans")]
+    
+   subgraph MARTS["Data Marts"]
+        subgraph LOAN_MART["loans_mart"]
+        end
+        subgraph TRANS_MART["trans_mart"]
+            fact_transactions[("fact_transactions")]
+        end
+        subgraph PAYMENT_MART["payment_mart"]
+            fact_payments[("fact_payments")]
+        end
+        subgraph CC_MART["cc_mart"]
+            fact_creditcard[("fact_creditcard")]
+        end
+    end
+    ODS -- "<b><font size=4 color=Blue>Pushing Files from ODS to Data Marts Layer</font><b></b></b>" --> MARTS
+    fact_loans -->|"HighValueFlag = 'Y'<br/>LoanCategory derived from RiskIndicator"| fact_high_value_loans
+    ODS_Transactions -->|"transaction_flag:<br/>FLAGGED / NORMAL"| fact_transactions
+    ODS_Payments -->|"AmountInBaseCurrency =<br/>Amount x ExchangeRate"| fact_payments
+    ODS_CreditCard -->|"Latest load_dt only"| fact_creditcard
+    ODS_Cust_Profile-->|"FirstName / PhoneNumber"| fact_creditcard
+    subgraph Reporting Layer["Reporting Layer"]
+        RPT_Suspecious_Transactions[("RPT_Suspecious_Transactions")]
+        VW_Suspecious_Transactions_Details[("VW_Suspecious_Transactions_Details")]
+        RPT_Branch_Summary[("RPT_Branch_Summary")]
+        VW_Branch_Summary_Status[("VW_Branch_Summary_Status")]
+        VW_Top_Performing_Branch_Details[("VW_Top_Performing_Branch_Details")]
+        RPT_Loan_Summary[("RPT_Loan_Summary")]
+        end
+        fact_transactions --> RPT_Suspecious_Transactions
+        ODS_Accounts --> RPT_Branch_Summary
+        DIM_Cust_Profile --> RPT_Branch_Summary
+        DIM_Branches -->RPT_Branch_Summary
+        fact_payments -->RPT_Branch_Summary
+        fact_transactions --> RPT_Branch_Summary
+        RPT_Suspecious_Transactions -->VW_Suspecious_Transactions_Details
+        RPT_Branch_Summary --> VW_Branch_Summary_Status
+        RPT_Branch_Summary --> VW_Top_Performing_Branch_Details
+        FACT_Loans -->  RPT_Loan_Summary
